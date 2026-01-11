@@ -70,7 +70,6 @@ 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
 
 helm fetch https://helm.ngc.nvidia.com/nim/charts/nim-llm-1.3.0.tgz --username='$oauthtoken' --password=$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
 
-
 import getpass
 import os
 
