@@ -27,7 +27,7 @@ compressnet	2/udp	0.001845	# Management Utility
 compressnet	3/tcp	0.001242	# Compression Process
 compressnet	3/udp	0.001532	# Compression Process
 unknown	4/tcp	0.000477
-rje	5/tcp	0.000000	# Remote Job Entry
+rje	5/tcp	0.000000	# Remote Job Entry 
 rje	5/udp	0.000593	# Remote Job Entry
 unknown	6/tcp	0.000502
 echo	7/sctp	0.000000
