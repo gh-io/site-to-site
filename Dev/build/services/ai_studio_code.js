@@ -1,5 +1,6 @@
 import { FunctionDeclaration,  GoogleGenAI, LiveServerMessage, Modality, Type } from '@google/genai';
 
+
 // Assuming you have defined a function `controlLight` which takes `brightness` and `colorTemperature` as input arguments.
 const controlLightFunctionDeclaration: FunctionDeclaration = {
   name: 'controlLight',
