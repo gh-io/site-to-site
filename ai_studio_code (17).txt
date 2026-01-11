@@ -1,0 +1,76 @@
+import { FunctionDeclaration,  GoogleGenAI, LiveServerMessage, Modality, Type } from '@google/genai';
+
+// Assuming you have defined a function `controlLight` which takes `brightness` and `colorTemperature` as input arguments.
+const controlLightFunctionDeclaration: FunctionDeclaration = {
+  name: 'controlLight',
+  parameters: {
+    type: Type.OBJECT,
+    description: 'Set the brightness and color temperature of a room light.',
+    properties: {
+      brightness: {
+        type: Type.NUMBER,
+        description:
+          'Light level from 0 to 100. Zero is off and 100 is full brightness.',
+      },
+      colorTemperature: {
+        type: Type.STRING,
+        description:
+          'Color temperature of the light fixture such as `daylight`, `cool` or `warm`.',
+      },
+    },
+    required: ['brightness', 'colorTemperature'],
+  },
+};
+const sessionPromise = ai.live.connect({
+  model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+  callbacks: {
+    onopen: () => {
+      console.debug('opened');
+    },
+    onmessage: async (message: LiveServerMessage) => {
+      if (message.toolCall) {
+        for (const fc of message.toolCall.functionCalls) {
+          /**
+           * The function call might look like this:
+           * {
+           *   args: { colorTemperature: 'warm', brightness: 25 },
+           *   name: 'controlLight',
+           *   id: 'functionCall-id-123',
+           * }
+           */
+          console.debug('function call: ', fc);
+          // Assume you have executed your function:
+          // const result = await controlLight(fc.args.brightness, fc.args.colorTemperature);
+          // After executing the function call, you must send the response back to the model to update the context.
+          const result = "ok"; // Return a simple confirmation to inform the model that the function was executed.
+          sessionPromise.then((session) => {
+            session.sendToolResponse({
+              functionResponses: {
+                id : fc.id,
+                name: fc.name,
+                response: { result: result },
+              }
+            })
+          });
+        }
+      }
+      // IMPORTANT: The model might send audio *along with* or *instead of* a tool call.
+      // Always handle the audio stream.
+      const base64EncodedAudioString =
+      message.serverContent?.modelTurn?.parts[0]?.inlineData.data;
+      if (base64EncodedAudioString) {
+        /* ... process the audio output (see Session Setup example) ... */
+      }
+    },
+    onerror: (e: ErrorEvent) => {
+      console.debug('got error');
+    },
+    onclose: (e: CloseEvent) => {
+      console.debug('closed');
+    },
+  },
+  config: {
+    responseModalities: [Modality.AUDIO], // Must be an array with a single `Modality.AUDIO` element.
+    tools: [{functionDeclarations: [controlLightFunctionDeclaration]}], // You can pass multiple functions to the model.
+  },
+});
