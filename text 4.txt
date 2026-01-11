@@ -1,0 +1,105 @@
+#!/bin/bash
+
+set -e
+
+echo "🚀 Starting FULL empire-wide security sweep..."
+echo "==============================================="
+
+# ----------------------------------------------
+# 1. Create working directory
+# ----------------------------------------------
+mkdir -p all_repos
+cd all_repos
+
+echo "📥 Fetching ALL GitHub repos for Web4application..."
+curl -s "https://api.github.com/users/Web4application/repos?per_page=200" \
+  | jq -r '.[].clone_url' \
+  | xargs -n 1 git clone
+
+echo "📥 Fetching ALL Codeberg repos for Web4application..."
+curl -s "https://codeberg.org/api/v1/users/Web4application/repos?limit=200" \
+  | jq -r '.[].clone_url' \
+  | xargs -n 1 git clone
+
+echo "📁 All repos downloaded."
+echo "-----------------------------------------------"
+
+# ----------------------------------------------
+# 2. Scan each repo for secrets
+# ----------------------------------------------
+echo "🔍 Scanning EVERY repo for leaked secrets..."
+
+for repo in */; do
+  echo "-------------------------------------------"
+  echo "🔎 Checking: $repo"
+  cd "$repo"
+
+  echo "📌 File-based scan:"
+  git grep -I -n "SECRET" . || true
+  git grep -I -n "KEY" . || true
+  git grep -I -n "TOKEN" . || true
+  git grep -I -n "PASSWORD" . || true
+  git grep -I -n "OPENAI" . || true
+  git grep -I -n "API" . || true
+
+  echo "🧨 Trufflehog deep scan:"
+  trufflehog git file://. --no-update || true
+
+  cd ..
+done
+
+echo "🔐 Scan completed."
+echo "-----------------------------------------------"
+
+# ----------------------------------------------
+# 3. Remove leaked .env files from ALL repos
+# ----------------------------------------------
+echo "🧹 Cleaning .env files from commit history (if any)..."
+
+for repo in */; do
+  cd "$repo"
+
+  if [ -f ".env" ] || [ -f ".env.local" ]; then
+    echo "⚠️ Found .env in $repo — cleaning history..."
+    git filter-repo --invert-paths \
+      --path .env \
+      --path .env.local \
+      --force
+
+    echo "⬆️ Force pushing clean history..."
+    git push origin --force --all
+  else
+    echo "✔️ No .env found in $repo"
+  fi
+
+  cd ..
+done
+
+echo "🧼 All repos cleaned."
+echo "-----------------------------------------------"
+
+# ----------------------------------------------
+# 4. Install global gitignore protection
+# ----------------------------------------------
+echo "🛡️ Installing global protection rules..."
+
+git config --global core.excludesfile ~/.gitignore_global
+
+cat <<EOF >> ~/.gitignore_global
+.env
+.env.*
+*.local
+*.secret
+*.key
+*.pem
+*.p12
+*.token
+secrets/
+keys/
+EOF
+
+echo "🔥 Global .gitignore updated."
+echo "-----------------------------------------------"
+
+echo "🎉 FULL SECURITY SWEEP COMPLETED."
+echo "Your entire repo empire is now fortified. 🚀"
