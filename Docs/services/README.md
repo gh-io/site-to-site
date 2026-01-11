@@ -1,4 +1,5 @@
 This README presents the two standard methods to install the Coq Platform on macOS:
+
 - using a [macOS DMG package](#installation-using-the-macos-dmg-package),
 - [from sources](#installation-by-compiling-from-sources-using-opam), using the platform scripts.
 
