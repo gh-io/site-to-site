@@ -1,0 +1,88 @@
+version: 3
+agent:
+  authtoken: AUTHTOKEN_CREATED_IN_STEP_1
+endpoints:
+  - name: rest-api
+    url: https://rest-api.clinic1.internal
+    upstream:
+      url: 8080 # REST API
+  - name: patient-db
+    url: tls://patient-db.clinic1.internal
+    upstream:
+      url: 5432 # PostgreSQL Patient database
+  - name: operations-db
+    url: tcp://operations-database.clinic1.internal:433
+    upstream:
+      url: 1433 # SQL Operations database
+      on_tcp_connect:
+  - actions:
+    - type: terminate-tls
+      config:
+        min_version: "1.3"
+    - type: forward-internal
+      config:
+        url: tls://patient-db.clinic1.internal:443
+
+        on_tcp_connect:
+  - actions:
+    - type: restrict-ips
+      config:
+        enforce: true
+        allow:
+          - e680:5791:be4c:5739:d959:7b94:6d54:d4b4/128
+          - 203.0.113.42/32
+    - type: forward-internal
+      config:
+        url: tcp://operations-database.clinic1.internal:443
+
+        on_http_request:
+  - expressions:
+      - hasReqHeader('example-token')
+  - actions:
+      - type: jwt-validation
+        config:
+          issuer:
+            allow_list:
+              - value: 'https://example.com/issuer'
+          audience:
+            allow_list:
+              - value: 'urn:example:api'
+          http:
+            tokens:
+              - type: access_token
+                method: header
+                name: Authorization
+                prefix: 'Bearer '
+              - type: it+jwt
+                method: body
+                name: _id_token
+          jws:
+            allowed_algorithms:
+              - RS256
+              - ES256
+            keys:
+              sources:
+                additional_jkus:
+                  - 'https://example.com/issuer/jku'
+  - type: forward-internal
+    config:
+      url: 'https://rest-api.clinic1.internal:443'
+
+      curl -X POST https://api.ngrok.com/endpoints \
+  -H "Authorization: Bearer <NGROK_API_KEY>" \
+  -H "Content-Type: application/json" \
+  -H "Ngrok-Version: 2" \
+  -d '{
+    "type": "cloud",
+    "url": "tls://patientdb-clinic1.clinic-network.com",
+    "traffic_policy": "{ \"on_tcp_connect\": [ { \"actions\": [ { \"type\": \"terminate-tls\", \"config\": { \"min_version\": \"1.3\" } } ] } ], { \"type\": \"forward-internal\", \"config\": { \"url\": \"tls://patient-db.clinic1.internal:443\" } } ] } ] }"
+  }'
+  curl -X POST https://api.ngrok.com/endpoints \
+  -H "Authorization: Bearer <NGROK_API_KEY>" \
+  -H "Content-Type: application/json" \
+  -H "Ngrok-Version: 2" \
+  -d '{
+    "type": "cloud",
+    "url": "RESERVED_TCP_ADDR_FROM_STEP_4",
+    "traffic_policy": "{ \"on_tcp_connect\": [ { \"actions\": [ { \"type\": \"restrict-ips\", \"config\": { \"enforce\": true, \"allow\": [ \"e680:5791:be4c:5739:d959:7b94:6d54:d4b4/128\", \"203.0.113.42/32\" ] } }, { \"type\": \"forward-internal\", \"config\": { \"url\": \"tcp://operations-database.clinic1.internal:443\" } } ] } ] }"
+  }'
