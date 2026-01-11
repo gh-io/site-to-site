@@ -1,4 +1,4 @@
-public async Task LoadCache()
+public async Task LoadCache() 
 {
     CacheLoaded = false;
 
