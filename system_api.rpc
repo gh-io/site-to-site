@@ -5,4 +5,3 @@ message: "The specified format type is not supported"
 
 [type.googleapis.com/google.rpc.RequestInfo]
 request_id: "9a832312f564493f932d3207a993e9b0"
-
