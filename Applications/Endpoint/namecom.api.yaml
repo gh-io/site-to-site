@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   contact:
-    email: reseller@name.com
+    email: kubulee.kl@name.com
     name: Reseller Account Services
   description: RESTful API for managing domains, DNS records, and related services at name.com.  Access via HTTPS at api.name.com (production) or api.dev.name.com (testing).  Supports standard authentication, rate-limited to 20 requests/second.
   title: name.com Core API
